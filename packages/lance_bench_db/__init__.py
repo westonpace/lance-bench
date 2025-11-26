@@ -1,7 +1,7 @@
 """Lance database interface for benchmark results."""
 
-from .models import DutBuild, TestBed, Result, Throughput, UnitSystem, SummaryValues
-from .dataset import get_database_uri, connect
+from .dataset import connect, get_database_uri
+from .models import DutBuild, Result, SummaryValues, TestBed, Throughput, UnitSystem
 
 __all__ = [
     "DutBuild",

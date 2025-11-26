@@ -154,7 +154,7 @@ def upload_results(results: list[Result]) -> None:
     # Add data to table
     results_table.add(table)
 
-    print(f"Successfully uploaded {len(results)} benchmark results to {get_database_uri()}")
+    print(f"Successfully uploaded {len(results)} benchmark results to <{get_database_uri()}>")
 
 
 def main() -> None:
@@ -211,7 +211,7 @@ def main() -> None:
         sys.exit(1)
 
     # Upload results
-    print("Uploading results to LanceDB...")
+    print(f"Uploading results to LanceDB at <{get_database_uri()}>...")
     upload_results(results)
 
 

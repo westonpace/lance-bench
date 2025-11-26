@@ -1,8 +1,9 @@
 """Data models for benchmark results."""
 
+from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import Enum
-from typing import Iterable, Optional
+from typing import Optional
 
 import lancedb
 import pyarrow as pa
