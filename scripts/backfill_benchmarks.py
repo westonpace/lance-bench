@@ -21,11 +21,15 @@ sys.path.insert(0, str(Path(__file__).parent.parent / "packages"))
 from lance_bench_db.dataset import connect
 from lance_bench_db.models import Result
 
+# Set database URI
+os.environ["LANCE_BENCH_URI"] = "s3://lance-bench-results"
+
 # Configuration
 LANCE_REPO = "lance-format/lance"
+LANCE_BENCH_REPO = "westonpace/lance-bench"
 WORKFLOW_NAME = "run-benchmarks.yml"
-MAX_COMMITS = 50
-COMMIT_INTERVAL = 10
+MAX_COMMITS = 10
+COMMIT_INTERVAL = 1
 
 
 def get_github_client() -> Github:
@@ -87,7 +91,10 @@ def select_commits(commits: list[str]) -> list[str]:
             break
         selected.append(commits[i])
 
-    print(f"Selected {len(selected)} commits to benchmark (every {COMMIT_INTERVAL}th commit)")
+    if COMMIT_INTERVAL == 1:
+        print(f"Selected {len(selected)} commits to benchmark (most recent)")
+    else:
+        print(f"Selected {len(selected)} commits to benchmark (every {COMMIT_INTERVAL}th commit)")
     print()
     return selected
 
@@ -112,6 +119,9 @@ def has_results_for_commit(commit_sha: str) -> bool:
 
     Returns:
         True if results exist, False otherwise
+
+    Raises:
+        Exception: If unable to connect to database or query results
     """
     short_sha = get_short_sha(commit_sha)
 
@@ -126,8 +136,10 @@ def has_results_for_commit(commit_sha: str) -> bool:
 
         return len(results) > 0
     except Exception as e:
-        print(f"  Warning: Error checking for existing results: {e}")
-        return False
+        print(f"\n  ERROR: Cannot check for existing results: {e}")
+        print("  Database connection is required to avoid duplicate benchmark runs.")
+        print("  Please ensure LANCE_BENCH_URI is accessible and AWS credentials are set.")
+        raise
 
 
 def trigger_workflow(github_client: Github, commit_sha: str) -> int | None:
@@ -143,7 +155,8 @@ def trigger_workflow(github_client: Github, commit_sha: str) -> int | None:
     print("  Triggering workflow...")
 
     try:
-        repo = github_client.get_repo(LANCE_REPO)
+        repo = github_client.get_repo(LANCE_BENCH_REPO)
+
         workflow = repo.get_workflow(WORKFLOW_NAME)
 
         # Trigger the workflow with the commit SHA as input
@@ -152,6 +165,8 @@ def trigger_workflow(github_client: Github, commit_sha: str) -> int | None:
         if not success:
             print("  ERROR: Failed to trigger workflow")
             return None
+
+        print(f"  ✓ Workflow dispatched for commit {get_short_sha(commit_sha)}")
 
     except Exception as e:
         print(f"  ERROR: Failed to trigger workflow: {e}")
@@ -192,7 +207,7 @@ def wait_for_workflow(github_client: Github, run_id: int) -> bool:
     """
     print(f"  Watching workflow run ID: {run_id}")
 
-    repo = github_client.get_repo(LANCE_REPO)
+    repo = github_client.get_repo(LANCE_BENCH_REPO)
 
     try:
         # Poll the workflow run status
