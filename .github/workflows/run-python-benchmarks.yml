@@ -46,10 +46,6 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install maturin and pytest dependencies
-        run: |
-          pip install maturin pytest pytest-benchmark
-
       - name: Extract version from Cargo.toml
         id: extract_version
         run: |
@@ -66,21 +62,31 @@ jobs:
           echo "timestamp=${TIMESTAMP}" >> $GITHUB_OUTPUT
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
 
+      - name: Create virtual environment and install dependencies
+        run: |
+          cd lance/python
+          python -m venv venv
+          source venv/bin/activate
+          pip install maturin pytest pytest-benchmark
+
       - name: Build Lance Python package
         run: |
           cd lance/python
+          source venv/bin/activate
           maturin develop --release
 
       - name: Generate benchmark datasets
         run: |
-          cd lance
-          python python/python/ci_benchmarks/datagen/gen_all.py
+          cd lance/python
+          source venv/bin/activate
+          python python/ci_benchmarks/datagen/gen_all.py
 
       - name: Run Python benchmarks
         run: |
-          cd lance
-          pytest python/python/ci_benchmarks/benchmarks \
-            --benchmark-json=../pytest-output.json \
+          cd lance/python
+          source venv/bin/activate
+          pytest python/ci_benchmarks/benchmarks \
+            --benchmark-json=../../pytest-output.json \
             --benchmark-only
 
       - name: Install uv
