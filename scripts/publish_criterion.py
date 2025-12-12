@@ -4,7 +4,6 @@
 import argparse
 import json
 import math
-import platform
 import sys
 import uuid
 from datetime import datetime
@@ -14,24 +13,10 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / "packages"))
 
 from lance_bench_db.dataset import connect, get_database_uri
-from lance_bench_db.models import DutBuild, Result, SummaryValues, TestBed, Throughput, UnitSystem
+from lance_bench_db.models import DutBuild, Result, SummaryValues, Throughput, UnitSystem
 
-
-def get_test_bed(name: str | None = None) -> TestBed:
-    """Create a TestBed instance from the current system information.
-
-    Args:
-        name: Optional testbed name. If not provided, uses platform.node()
-    """
-    import psutil
-
-    return TestBed(
-        name=name or platform.node(),
-        cpu=platform.processor() or platform.machine(),
-        memory_gb=int(psutil.virtual_memory().total / (1024**3)),
-        os=f"{platform.system()} {platform.release()}",
-        created_at=int(datetime.now().timestamp()),
-    )
+# Import shared utilities
+from publish_util import get_test_bed
 
 
 def parse_criterion_output(

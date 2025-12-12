@@ -1,0 +1,38 @@
+name: Schedule Benchmarks for New Lance Commits
+
+on:
+  schedule:
+    # Run every 6 hours (00:00, 06:00, 12:00, 18:00 UTC)
+    - cron: '0 */6 * * *'
+  workflow_dispatch: # Allow manual triggering for testing
+
+jobs:
+  check-and-trigger:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout lance-bench repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v4
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Check for new commits and trigger benchmarks
+        env:
+          LANCE_BENCH_URI: ${{ secrets.LANCE_BENCH_DB_URI }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.BENCH_S3_USER_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.BENCH_S3_USER_SECRET_KEY }}
+          GITHUB_TOKEN: ${{ secrets.SCHEDULER_GITHUB_TOKEN }}
+          LANCE_BENCH_REPO: ${{ github.repository }}
+        run: |
+          uv run python scripts/schedule_benchmarks.py
